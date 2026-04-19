@@ -80,4 +80,44 @@ public class NPCController : MonoBehaviour
         else
             emotionIcon.color = Color.yellow;
     }
+
+    public void ActivateTrigger(string triggerType)
+    {
+        bool hasTriggeredMemory = false;
+
+        foreach (var memory in memories)
+        {
+            // Eğer anının tag'leri arasında bu tetikleyici varsa
+            if (memory.tags.Contains(triggerType))
+            {
+                // Geçici olarak anı gücünü artır (Coroutine ile)
+                StartCoroutine(TemporaryBoostMemory(memory, 0.5f, 10f)); // %50 güçlendir, 10sn sürsün
+                hasTriggeredMemory = true;
+            }
+        }
+
+        if (hasTriggeredMemory)
+        {
+            Debug.Log($"💥 {npcName}: '{triggerType}' tetikleyicisi geçmiş anıları canlandırdı!");
+        }
+    }
+
+    System.Collections.IEnumerator TemporaryBoostMemory(NPCMemory memory, float boostAmount, float duration)
+    {
+        float originalImpact = memory.emotionalImpact;
+        float originalTimestamp = memory.timestamp;
+
+    
+        memory.emotionalImpact = originalImpact * 2f;    // Aniyi hem guclendir hem de yeniden "hatirlanmis" gibi tazele
+        memory.timestamp = Time.time;
+
+        UpdateEmotionDisplay();
+
+        yield return new WaitForSeconds(duration);
+
+        memory.emotionalImpact = originalImpact;
+        memory.timestamp = originalTimestamp;
+
+        UpdateEmotionDisplay();
+    }
 }

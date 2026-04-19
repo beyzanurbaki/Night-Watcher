@@ -17,12 +17,12 @@ public class Personality
     /// </summary>
     public float GetDecayRate(float emotionalImpact)
     {
-        float baseDecay = 0.1f; //gecikme daha hýzlý olmasý için 0.01 den 0.1 e yükselttik
+        float baseDecay = 0.15f; //gecikme daha hýzlý olmasý için 0.01 den 0.1 e yükselttik
 
         if (emotionalImpact < 0)
         {
             // Negatif ani - yuksek nevrotiklik = yavas unutma
-            return baseDecay * (1f - neuroticism * 0.5f);
+            return baseDecay * (1f - neuroticism * 0.8f);
         }
         else
         {

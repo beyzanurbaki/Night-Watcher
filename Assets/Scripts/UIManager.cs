@@ -72,24 +72,30 @@ public class UIManager : MonoBehaviour
                 impact = 0.3f;
                 tags.Add("social");
                 break;
+
             case "gift":
                 impact = 0.6f;
                 tags.Add("social");
                 tags.Add("gift");
                 break;
+
             case "help":
                 impact = 0.5f;
                 tags.Add("help");
                 break;
+
             case "shout":
                 impact = -0.4f;
                 tags.Add("negative");
                 tags.Add("noise");
+                tags.Add("night_time");   // gece tetikleyicisi çalışınca bu satırların çalışması için
                 break;
+
             case "attack":
                 impact = -0.7f;
                 tags.Add("negative");
                 tags.Add("threat");
+                tags.Add("night_time");   // gece tetikleyicisi çalışınca bu satırların çalışması için
                 break;
         }
 
