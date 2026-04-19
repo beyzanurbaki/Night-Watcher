@@ -88,7 +88,7 @@ public class NPCController : MonoBehaviour
         foreach (var memory in memories)
         {
             // Eğer anının tag'leri arasında bu tetikleyici varsa
-            if (memory.tags.Contains(triggerType))
+            if (memory.tags.Contains(triggerType) && Mathf.Abs(memory.GetStrength()) > 0.1f)
             {
                 // Geçici olarak anı gücünü artır (Coroutine ile)
                 StartCoroutine(TemporaryBoostMemory(memory, 0.5f, 10f)); // %50 güçlendir, 10sn sürsün
@@ -98,7 +98,7 @@ public class NPCController : MonoBehaviour
 
         if (hasTriggeredMemory)
         {
-            Debug.Log($"💥 {npcName}: '{triggerType}' tetikleyicisi geçmiş anıları canlandırdı!");
+            Debug.Log($" {npcName}: '{triggerType}' tetikleyicisi geçmiş anıları canlandırdı!");
         }
     }
 

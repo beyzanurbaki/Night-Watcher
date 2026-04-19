@@ -8,6 +8,9 @@ public class UIManager : MonoBehaviour
     [Header("UI Referansları")]
     public GameObject interactionPanel;
 
+    [Header("Memory Panel")]
+    public GameObject memoryPanel;
+
     private GameObject currentNPC; // Hangi NPC ile etkileşimde
 
     void Awake()
@@ -23,6 +26,13 @@ public class UIManager : MonoBehaviour
     {
         // Başlangıçta panel kapalı
         interactionPanel.SetActive(false);
+        memoryPanel.SetActive(false);
+    }
+
+    public void ToggleMemoryPanel()
+    {
+        bool isActive = memoryPanel.activeSelf;
+        memoryPanel.SetActive(!isActive);
     }
 
     /// <summary>

@@ -32,6 +32,11 @@ public class PlayerController : MonoBehaviour
         {
             Interact();
         }
+
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            UIManager.Instance.ToggleMemoryPanel();
+        }
     }
 
     void FixedUpdate()

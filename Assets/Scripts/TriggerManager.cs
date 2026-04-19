@@ -4,7 +4,7 @@ public class TriggerManager : MonoBehaviour
 {
     public static TriggerManager Instance;
 
-    [Header("Tüm NPC'ler")]
+    [Header("Tum NPC'ler")]
     public NPCController[] allNPCs;
 
     void Awake()
@@ -14,13 +14,11 @@ public class TriggerManager : MonoBehaviour
 
     void Start()
     {
-        // TimeManager'ýn event'ine abone ol
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnTriggerActivated.AddListener(HandleTrigger);
         }
 
-        // Sahnedeki tüm NPC'leri otomatik bul
         allNPCs = FindObjectsByType<NPCController>(FindObjectsSortMode.None);
     }
 
@@ -28,7 +26,6 @@ public class TriggerManager : MonoBehaviour
     {
         Debug.Log($"Tetikleyici Aktif: {triggerType}");
 
-        // Tüm NPC'lere tetikleyiciyi gönder
         foreach (var npc in allNPCs)
         {
             npc.ActivateTrigger(triggerType);
