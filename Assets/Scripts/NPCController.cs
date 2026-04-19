@@ -26,7 +26,13 @@ public class NPCController : MonoBehaviour
 
     void Start()
     {
-        player = GameObject.Find("Player").transform;
+        GameObject playerObject = GameObject.Find("Player");
+
+        if (playerObject != null)
+        {
+            player = playerObject.transform;
+        }
+
         startPosition = transform.position;
     }
 
@@ -42,7 +48,6 @@ public class NPCController : MonoBehaviour
 
         float distance = Vector2.Distance(transform.position, player.position);
 
-        // Oyuncu yakinsa tepki ver
         if (distance < detectionRange)
         {
             string disposition = GetDispositionLabel();
@@ -72,28 +77,36 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            // Oyuncu uzaktaysa baslangic noktasina don
             MoveTowards(startPosition, moveSpeed * 0.3f);
         }
     }
 
     void MoveTowards(Vector2 target, float speed)
     {
-        Vector2 direction = (target - (Vector2)transform.position).normalized;
-        transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+        transform.position = Vector2.MoveTowards(
+            transform.position,
+            target,
+            speed * Time.deltaTime
+        );
     }
 
     void MoveAway(Vector2 target, float speed)
     {
         Vector2 direction = ((Vector2)transform.position - target).normalized;
         Vector2 destination = (Vector2)transform.position + direction * 2f;
-        transform.position = Vector2.MoveTowards(transform.position, destination, speed * Time.deltaTime);
+
+        transform.position = Vector2.MoveTowards(
+            transform.position,
+            destination,
+            speed * Time.deltaTime
+        );
     }
 
     public void AddMemory(string eventType, float impact, List<string> tags = null)
     {
         NPCMemory newMemory = new NPCMemory(eventType, impact, tags);
         newMemory.decayRate = personality.GetDecayRate(impact);
+
         memories.Add(newMemory);
 
         Debug.Log($"{npcName}: Yeni ani eklendi - {eventType} ({impact:F1}) - Decay: {newMemory.decayRate:F4}");
@@ -110,6 +123,7 @@ public class NPCController : MonoBehaviour
         if (memories.Count == 0) return 0f;
 
         float total = 0f;
+
         foreach (var memory in memories)
         {
             total += memory.GetStrength();
@@ -153,7 +167,9 @@ public class NPCController : MonoBehaviour
 
         foreach (var memory in memories)
         {
-            if (memory.tags.Contains(triggerType) && Mathf.Abs(memory.GetStrength()) > 0.1f)
+            if (memory.tags != null &&
+                memory.tags.Contains(triggerType) &&
+                Mathf.Abs(memory.GetStrength()) > 0.1f)
             {
                 StartCoroutine(TemporaryBoostMemory(memory, 0.5f, 10f));
                 hasTriggeredMemory = true;

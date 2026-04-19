@@ -2,16 +2,19 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Hareket Ayarlarý")]
+    [Header("Hareket Ayarlari")]
     public float moveSpeed = 5f;
 
-    [Header("Etkileþim Ayarlarý")]
+    [Header("Etkilesim Ayarlari")]
     public float interactionRange = 1.5f;
     public LayerMask npcLayer;
 
+    [Header("Fener")]
+    public GameObject flashlight;
+
     private Rigidbody2D rb;
     private Vector2 movement;
-    private GameObject nearbyNPC; // Yakýndaki NPC
+    private GameObject nearbyNPC;
 
     void Start()
     {
@@ -20,40 +23,47 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // WASD giriþini al
+        // Hareket
         movement.x = Input.GetAxisRaw("Horizontal");
         movement.y = Input.GetAxisRaw("Vertical");
 
-        // Yakýndaki NPC'yi kontrol et
+        // NPC kontrolu
         CheckNearbyNPC();
 
-        // E tuþu ile etkileþim
+        // E tusu ile etkilesim
         if (Input.GetKeyDown(KeyCode.E) && nearbyNPC != null)
         {
             Interact();
         }
 
+        // Tab ile hafiza paneli
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             UIManager.Instance.ToggleMemoryPanel();
+        }
+
+        // F ile fener ac/kapa
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            if (flashlight != null)
+            {
+                flashlight.SetActive(!flashlight.activeSelf);
+            }
         }
     }
 
     void FixedUpdate()
     {
-        // Fizik bazlý hareket
         rb.MovePosition(rb.position + movement.normalized * moveSpeed * Time.fixedDeltaTime);
     }
 
     void CheckNearbyNPC()
     {
-        // Oyuncunun etrafýnda daire içinde NPC var mý?
         Collider2D hit = Physics2D.OverlapCircle(transform.position, interactionRange, npcLayer);
 
         if (hit != null)
         {
             nearbyNPC = hit.gameObject;
-            Debug.Log("NPC yakýnda: " + nearbyNPC.name); // Console'da göster
         }
         else
         {
@@ -65,6 +75,10 @@ public class PlayerController : MonoBehaviour
     {
         UIManager.Instance.ShowInteractionMenu(nearbyNPC);
     }
-}
 
-    
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, interactionRange);
+    }
+}

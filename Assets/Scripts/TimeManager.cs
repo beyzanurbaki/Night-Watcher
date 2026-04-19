@@ -13,6 +13,9 @@ public class TimeManager : MonoBehaviour
     public int currentDay = 1;
     public bool isNightActive = false;
 
+    [Header("Gece Efekti")]
+    public GameObject darkOverlay;
+
     [Header("Events")]
     public UnityEvent<string> OnTriggerActivated;
 
@@ -44,6 +47,12 @@ public class TimeManager : MonoBehaviour
         OnTriggerActivated?.Invoke("night_time");
 
         Camera.main.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
+
+        // Karanlik overlay ac
+        if (darkOverlay != null)
+        {
+            darkOverlay.SetActive(true);
+        }
     }
 
     void StartNewDay()
@@ -54,5 +63,11 @@ public class TimeManager : MonoBehaviour
         Debug.Log($"Gun {currentDay} basladi!");
 
         Camera.main.backgroundColor = new Color(0.4f, 0.6f, 0.8f);
+
+        // Karanlik overlay kapat
+        if (darkOverlay != null)
+        {
+            darkOverlay.SetActive(false);
+        }
     }
 }
