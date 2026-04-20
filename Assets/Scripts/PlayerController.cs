@@ -43,7 +43,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // F ile fener ac/kapa
-        if (Input.GetKeyDown(KeyCode.F))
+        if (Input.GetKeyDown(KeyCode.L))
         {
             if (flashlight != null)
             {

@@ -22,7 +22,7 @@ public class TriggerManager : MonoBehaviour
         allNPCs = FindObjectsByType<NPCController>(FindObjectsSortMode.None);
     }
 
-    void HandleTrigger(string triggerType)
+    public void HandleTrigger(string triggerType)
     {
         Debug.Log($"Tetikleyici Aktif: {triggerType}");
 

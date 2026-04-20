@@ -81,17 +81,22 @@ public class UIManager : MonoBehaviour
             case "greet":
                 impact = 0.3f;
                 tags.Add("social");
+                tags.Add("daytime");           
+                tags.Add("location_park");     
                 break;
 
             case "gift":
                 impact = 0.6f;
                 tags.Add("social");
-                tags.Add("gift");
+                tags.Add("gift_item");         
+                tags.Add("daytime");
                 break;
 
             case "help":
                 impact = 0.5f;
                 tags.Add("help");
+                tags.Add("threat_nearby");     
+                tags.Add("night_patrol");      
                 break;
 
             case "ignore":
@@ -104,16 +109,19 @@ public class UIManager : MonoBehaviour
                 impact = -0.4f;
                 tags.Add("negative");
                 tags.Add("noise");
-                tags.Add("night_time");   // gece tetikleyicisi çalışınca bu satırların çalışması için
+                tags.Add("loud_noise");
+                tags.Add("night_time");
+                tags.Add("darkness");
                 break;
 
             case "attack":
                 impact = -0.7f;
                 tags.Add("negative");
-                tags.Add("threat");
-                tags.Add("night_time");   // gece tetikleyicisi çalışınca bu satırların çalışması için
+                tags.Add("threat_nearby");
+                tags.Add("loud_noise");
+                tags.Add("night_time");
+                tags.Add("darkness");
                 break;
-
         }
 
         // Hafızaya ekle

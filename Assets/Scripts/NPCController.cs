@@ -23,6 +23,7 @@ public class NPCController : MonoBehaviour
 
     private Transform player;
     private Vector2 startPosition;
+    private Rigidbody2D rb;
 
     void Start()
     {
@@ -34,17 +35,22 @@ public class NPCController : MonoBehaviour
         }
 
         startPosition = transform.position;
+        rb = GetComponent<Rigidbody2D>();
     }
 
     void Update()
     {
         UpdateEmotionDisplay();
+    }
+
+    void FixedUpdate()
+    {
         UpdateBehavior();
     }
 
     void UpdateBehavior()
     {
-        if (player == null) return;
+        if (player == null || rb == null) return;
 
         float distance = Vector2.Distance(transform.position, player.position);
 
@@ -63,7 +69,7 @@ public class NPCController : MonoBehaviour
                     break;
 
                 case "Notr":
-                    // Yerinde dur
+                    rb.linearVelocity = Vector2.zero;
                     break;
 
                 case "Tedirgin":
@@ -77,29 +83,29 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            MoveTowards(startPosition, moveSpeed * 0.3f);
+            float distToStart = Vector2.Distance(transform.position, startPosition);
+
+            if (distToStart > 0.1f)
+            {
+                MoveTowards(startPosition, moveSpeed * 0.3f);
+            }
+            else
+            {
+                rb.linearVelocity = Vector2.zero;
+            }
         }
     }
 
     void MoveTowards(Vector2 target, float speed)
     {
-        transform.position = Vector2.MoveTowards(
-            transform.position,
-            target,
-            speed * Time.deltaTime
-        );
+        Vector2 direction = (target - (Vector2)transform.position).normalized;
+        rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
     }
 
     void MoveAway(Vector2 target, float speed)
     {
         Vector2 direction = ((Vector2)transform.position - target).normalized;
-        Vector2 destination = (Vector2)transform.position + direction * 2f;
-
-        transform.position = Vector2.MoveTowards(
-            transform.position,
-            destination,
-            speed * Time.deltaTime
-        );
+        rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
     }
 
     public void AddMemory(string eventType, float impact, List<string> tags = null)
@@ -167,9 +173,9 @@ public class NPCController : MonoBehaviour
 
         foreach (var memory in memories)
         {
-            if (memory.tags != null &&
-                memory.tags.Contains(triggerType) &&
-                Mathf.Abs(memory.GetStrength()) > 0.1f)
+            if (memory.tags == null) continue;
+
+            if (memory.tags.Contains(triggerType) && Mathf.Abs(memory.GetStrength()) > 0.02f)
             {
                 StartCoroutine(TemporaryBoostMemory(memory, 0.5f, 10f));
                 hasTriggeredMemory = true;

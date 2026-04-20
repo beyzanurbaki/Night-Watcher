@@ -44,12 +44,15 @@ public class TimeManager : MonoBehaviour
         isNightActive = true;
         Debug.Log($"Gece {currentDay} basladi!");
 
+        // Gece tetikleyicileri
         OnTriggerActivated?.Invoke("night_time");
+        OnTriggerActivated?.Invoke("darkness");
+        OnTriggerActivated?.Invoke("night_patrol");
 
         Camera.main.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
+      
 
-        // Karanlik overlay ac
-        if (darkOverlay != null)
+        if (darkOverlay != null)  //karanlýk overlay aç
         {
             darkOverlay.SetActive(true);
         }
@@ -62,10 +65,12 @@ public class TimeManager : MonoBehaviour
         currentDay++;
         Debug.Log($"Gun {currentDay} basladi!");
 
+        // Gunduz tetikleyicileri
+        OnTriggerActivated?.Invoke("daytime");
+
         Camera.main.backgroundColor = new Color(0.4f, 0.6f, 0.8f);
 
-        // Karanlik overlay kapat
-        if (darkOverlay != null)
+        if (darkOverlay != null) // karanlýk overlay kapat
         {
             darkOverlay.SetActive(false);
         }
