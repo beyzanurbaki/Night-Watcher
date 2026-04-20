@@ -94,6 +94,12 @@ public class UIManager : MonoBehaviour
                 tags.Add("help");
                 break;
 
+            case "ignore":
+                impact = 0.0f;
+                tags.Add("neutral");
+                tags.Add("ignore");
+                break;
+
             case "shout":
                 impact = -0.4f;
                 tags.Add("negative");
@@ -107,6 +113,7 @@ public class UIManager : MonoBehaviour
                 tags.Add("threat");
                 tags.Add("night_time");   // gece tetikleyicisi çalışınca bu satırların çalışması için
                 break;
+
         }
 
         // Hafızaya ekle

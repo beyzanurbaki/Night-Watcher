@@ -6,10 +6,12 @@ public class MemoryPanelUI : MonoBehaviour
     [Header("NPC Referanslari")]
     public NPCController ahmetNPC;
     public NPCController ayseNPC;
+    public NPCController mehmetNPC;
 
     [Header("UI Text Referanslari")]
     public TextMeshProUGUI ahmetInfoText;
     public TextMeshProUGUI ayseInfoText;
+    public TextMeshProUGUI mehmetInfoText;
 
     void Update()
     {
@@ -33,7 +35,6 @@ public class MemoryPanelUI : MonoBehaviour
                 $"En guclu ani: {strongest}";
         }
 
-        // Ayse bilgileri
         if (ayseNPC != null && ayseInfoText != null)
         {
             float disposition = ayseNPC.GetOverallDisposition();
@@ -43,6 +44,20 @@ public class MemoryPanelUI : MonoBehaviour
 
             ayseInfoText.text =
                 $"Ayse Teyze\n" +
+                $"Tutum: {label} ({disposition:F2})\n" +
+                $"Ani sayisi: {memoryCount}\n" +
+                $"En guclu ani: {strongest}";
+        }
+
+        if (mehmetNPC != null && mehmetInfoText != null)
+        {
+            float disposition = mehmetNPC.GetOverallDisposition();
+            string label = mehmetNPC.GetDispositionLabel();
+            int memoryCount = mehmetNPC.memories.Count;
+            string strongest = GetStrongestMemory(mehmetNPC);
+
+            mehmetInfoText.text =
+                $"Mehmet Abi\n" +
                 $"Tutum: {label} ({disposition:F2})\n" +
                 $"Ani sayisi: {memoryCount}\n" +
                 $"En guclu ani: {strongest}";
