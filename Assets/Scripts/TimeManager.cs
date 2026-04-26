@@ -44,19 +44,24 @@ public class TimeManager : MonoBehaviour
         isNightActive = true;
         Debug.Log($"Gece {currentDay} basladi!");
 
-        // Gece tetikleyicileri
+        // Gorev sistemini bilgilendir
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.OnNewNight();
+        }
+
         OnTriggerActivated?.Invoke("night_time");
         OnTriggerActivated?.Invoke("darkness");
         OnTriggerActivated?.Invoke("night_patrol");
 
         Camera.main.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
-      
 
-        if (darkOverlay != null)  //karanlýk overlay aç
+        if (darkOverlay != null)
         {
             darkOverlay.SetActive(true);
         }
     }
+
 
     void StartNewDay()
     {
@@ -65,12 +70,17 @@ public class TimeManager : MonoBehaviour
         currentDay++;
         Debug.Log($"Gun {currentDay} basladi!");
 
-        // Gunduz tetikleyicileri
+        // Etkilesim hakkini sabah sifirla
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ResetInteractions();
+        }
+
         OnTriggerActivated?.Invoke("daytime");
 
         Camera.main.backgroundColor = new Color(0.4f, 0.6f, 0.8f);
 
-        if (darkOverlay != null) // karanlýk overlay kapat
+        if (darkOverlay != null)
         {
             darkOverlay.SetActive(false);
         }

@@ -1,21 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
-    public static UIManager Instance; // Singleton (her yerden erişim)
+    public static UIManager Instance;
 
-    [Header("UI Referansları")]
+    [Header("UI Referanslari")]
     public GameObject interactionPanel;
 
     [Header("Memory Panel")]
     public GameObject memoryPanel;
 
-    private GameObject currentNPC; // Hangi NPC ile etkileşimde
+    [Header("Etkilesim Hakki")]
+    public int maxInteractions = 2;
+    public int remainingInteractions = 2;
+
+    [Header("Uyari")]
+    public TextMeshProUGUI warningText;
+
+    private GameObject currentNPC;
 
     void Awake()
     {
-        // Singleton ayarla
         if (Instance == null)
             Instance = this;
         else
@@ -24,9 +32,13 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
-        // Başlangıçta panel kapalı
         interactionPanel.SetActive(false);
         memoryPanel.SetActive(false);
+
+        if (warningText != null)
+        {
+            warningText.gameObject.SetActive(false);
+        }
     }
 
     public void ToggleMemoryPanel()
@@ -35,44 +47,64 @@ public class UIManager : MonoBehaviour
         memoryPanel.SetActive(!isActive);
     }
 
-    /// <summary>
-    /// Etkileşim menüsünü aç
-    /// </summary>
-    public void ShowInteractionMenu(GameObject npc)
+    public void ResetInteractions()
     {
-        currentNPC = npc;
-        interactionPanel.SetActive(true);
-        Time.timeScale = 0f; // Oyunu duraklat
-        Debug.Log("Menü açıldı: " + npc.name);
+        remainingInteractions = maxInteractions;
+        Debug.Log($"Etkilesim hakki sifirlandi: {remainingInteractions}");
     }
 
-    /// <summary>
-    /// Menüyü kapat
-    /// </summary>
+    public void ShowInteractionMenu(GameObject npc)
+    {
+        if (remainingInteractions <= 0)
+        {
+            Debug.Log("Etkilesim hakkin kalmadi! Yeni gunu bekle.");
+            StartCoroutine(ShowWarning("Etkilesim hakkin kalmadi! Yeni gunu bekle."));
+            return;
+        }
+
+        currentNPC = npc;
+        interactionPanel.SetActive(true);
+        Time.timeScale = 0f;
+        Debug.Log($"Menu acildi: {npc.name} (Kalan hak: {remainingInteractions})");
+    }
+
+    IEnumerator ShowWarning(string message)
+    {
+        if (warningText == null) yield break;
+
+        warningText.text = message;
+        warningText.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(4f); // 4 saniye
+
+        warningText.gameObject.SetActive(false);
+    }
+
     public void CloseInteractionMenu()
     {
         interactionPanel.SetActive(false);
-        Time.timeScale = 1f; // Oyunu devam ettir
+        Time.timeScale = 1f;
         currentNPC = null;
-        Debug.Log("Menü kapandı");
+        Debug.Log("Menu kapandi");
     }
 
-    /// <summary>
-    /// Butonlardan çağrılacak - Aksiyon gerçekleştir
-    /// </summary>
     public void OnActionButton(string actionType)
     {
         if (currentNPC == null) return;
 
-        // NPC'nin controller'ını al
         NPCController npc = currentNPC.GetComponent<NPCController>();
         if (npc == null)
         {
-            Debug.Log("HATA: NPCController bulunamadı!");
+            Debug.Log("HATA: NPCController bulunamadi!");
             return;
         }
 
-        // Aksiyona göre anı ekle
+        if (actionType != "ignore")
+        {
+            remainingInteractions--;
+            Debug.Log($"Etkilesim hakki kullanildi. Kalan: {remainingInteractions}");
+        }
+
         float impact = 0f;
         List<string> tags = new List<string>();
 
@@ -81,22 +113,22 @@ public class UIManager : MonoBehaviour
             case "greet":
                 impact = 0.3f;
                 tags.Add("social");
-                tags.Add("daytime");           
-                tags.Add("location_park");     
+                tags.Add("daytime");
+                tags.Add("location_park");
                 break;
 
             case "gift":
                 impact = 0.6f;
                 tags.Add("social");
-                tags.Add("gift_item");         
+                tags.Add("gift_item");
                 tags.Add("daytime");
                 break;
 
             case "help":
                 impact = 0.5f;
                 tags.Add("help");
-                tags.Add("threat_nearby");     
-                tags.Add("night_patrol");      
+                tags.Add("threat_nearby");
+                tags.Add("night_patrol");
                 break;
 
             case "ignore":
@@ -124,11 +156,38 @@ public class UIManager : MonoBehaviour
                 break;
         }
 
-        // Hafızaya ekle
         npc.AddMemory(actionType, impact, tags);
 
-        // Tutumu göster
         Debug.Log($"{npc.npcName} tutumu: {npc.GetDispositionLabel()} ({npc.GetOverallDisposition():F2})");
+
+        if (QuestManager.Instance != null)
+        {
+            string npcShortName = npc.npcName.Contains("Ahmet") ? "Ahmet" :
+                                  npc.npcName.Contains("Ayse") ? "Ayse" : "Mehmet";
+
+            QuestManager.Instance.OnNPCVisited(npcShortName);
+
+            switch (actionType)
+            {
+                case "greet":
+                    QuestManager.Instance.OnNPCGreeted(npcShortName);
+                    break;
+                case "gift":
+                    QuestManager.Instance.OnGiftGiven(npcShortName);
+                    break;
+                case "help":
+                    QuestManager.Instance.OnHelpGiven(npcShortName);
+                    break;
+            }
+        }
+
+        if (actionType == "shout" || actionType == "attack")
+        {
+            if (QuestManager.Instance != null)
+            {
+                QuestManager.Instance.OnBadAction();
+            }
+        }
 
         CloseInteractionMenu();
     }
