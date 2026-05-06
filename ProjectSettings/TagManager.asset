@@ -47,5 +47,11 @@ TagManager:
   - name: Background
     uniqueID: 1793376745
     locked: 0
+  - name: NPC
+    uniqueID: 2659436201
+    locked: 0
+  - name: Decorations
+    uniqueID: 3182613061
+    locked: 0
   m_RenderingLayers:
   - Default
