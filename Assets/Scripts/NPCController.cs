@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,10 @@ public class NPCController : MonoBehaviour
     public OllamaManager ollamaManager;
     public DialogueManager dialogueManager;
     private string modelId;
+    private bool modelReady = false;
+
+    [Header("AI Settings")]
+    public float aiTemperature = 0.3f;
 
     [Header("Personality & Memory")]
     public Personality personality = new Personality();
@@ -48,9 +53,17 @@ public class NPCController : MonoBehaviour
 
             Debug.Log($"<color=cyan>{npcName}</color> brain is being prepared...");
 
-            yield return StartCoroutine(ollamaManager.CreateNPCModel(modelId, systemPrompt));
+            bool createSuccess = false;
+            yield return StartCoroutine(
+                ollamaManager.CreateNPCModel(modelId, systemPrompt, success => createSuccess = success)
+            );
 
-            Debug.Log($"<color=cyan>{npcName}</color> brain is ready.");
+            modelReady = createSuccess;
+
+            if (modelReady)
+                Debug.Log($"<color=cyan>{npcName}</color> brain is ready.");
+            else
+                Debug.LogError($"<color=red>{npcName}</color> brain could not be created.");
         }
     }
 
@@ -67,19 +80,20 @@ public class NPCController : MonoBehaviour
     #region AI Interaction
     public void InteractWithPlayer(string playerMessage)
     {
-        if (ollamaManager == null || string.IsNullOrEmpty(modelId))
+        if (ollamaManager == null || string.IsNullOrEmpty(modelId) || !modelReady)
         {
-            Debug.LogWarning($"{npcName}: Missing OllamaManager or modelId!");
+            Debug.LogWarning($"{npcName}: Model is not ready!");
             return;
         }
 
         string memoryContext = GetMemoryContextForAI();
 
         string finalPrompt =
-            $"Current mood: {GetDispositionLabel()}\n" +
-            $"Recent memories: {memoryContext}\n" +
-            $"Player message: {playerMessage}\n" +
-            $"Reply rules: Answer only in English. Use only one short sentence. Maximum 5 words. No explanations. No questions. Stay in character.";
+            $"You are {npcName}.\n" +
+            $"Your current mood: {GetDispositionLabel()}.\n" +
+            $"Recent events: {memoryContext}.\n" +
+            $"What happened: {playerMessage}\n" +
+            $"Respond as {npcName} would. ONLY 1 sentence, max 5 words. No explanations.";
 
         Debug.Log($"<color=yellow>{npcName}</color> is thinking...");
 
@@ -91,7 +105,7 @@ public class NPCController : MonoBehaviour
                 dialogueManager.ShowMessage(shortReply);
 
             Debug.Log($"<color=cyan>{npcName}</color>: {shortReply}");
-        });
+        }, aiTemperature);
     }
 
     private string LimitReplyByWords(string reply, int maxWords = 5)
@@ -100,7 +114,7 @@ public class NPCController : MonoBehaviour
             return "";
 
         string cleaned = reply.Replace("\n", " ").Trim();
-        string[] words = cleaned.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        string[] words = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         if (words.Length <= maxWords)
             return cleaned;
@@ -123,14 +137,32 @@ public class NPCController : MonoBehaviour
     {
         string cleanName = npcName.Replace("-", " ").Replace("_", " ");
 
-        return $"You are {cleanName}, an NPC in a 2D game. " +
-               $"Big Five personality scores: " +
-               $"Openness={personality.openness:F2}, " +
-               $"Conscientiousness={personality.conscientiousness:F2}, " +
-               $"Extraversion={personality.extraversion:F2}, " +
-               $"Agreeableness={personality.agreeableness:F2}, " +
-               $"Neuroticism={personality.neuroticism:F2}. " +
-               $"Rules: Stay in character. Reply only in English. Use one short sentence. Maximum 5 words. No explanations.";
+        if (cleanName.Contains("Ayse"))
+        {
+            return "You are Aunt Ayse, a warm and cheerful old woman. " +
+                   "You love chatting and always speak kindly. " +
+                   "You call people dear. " +
+                   "Example replies: 'So sweet, dear.', 'Bless you, dear.', 'How lovely, dear.' " +
+                   "Rules: Reply only in English. One short sentence. Maximum 5 words.";
+        }
+        else if (cleanName.Contains("Ahmet"))
+        {
+            return "You are Uncle Ahmet, a grumpy and suspicious old man. " +
+                   "You dislike noise and trust people slowly. " +
+                   "You sound annoyed and blunt. " +
+                   "Example replies: 'Leave me alone.', 'What now?', 'Go away.' " +
+                   "Rules: Reply only in English. One short sentence. Maximum 5 words.";
+        }
+        else if (cleanName.Contains("Mehmet"))
+        {
+            return "You are Uncle Mehmet, a calm and serious old man. " +
+                   "You are polite, careful, and formal. " +
+                   "You sound measured and reserved. " +
+                   "Example replies: 'Thank you kindly.', 'I appreciate this.', 'Very well then.' " +
+                   "Rules: Reply only in English. One short sentence. Maximum 5 words.";
+        }
+
+        return $"You are {cleanName}. Reply only in English. One short sentence. Maximum 5 words.";
     }
     #endregion
 
@@ -150,7 +182,7 @@ public class NPCController : MonoBehaviour
 
         Debug.Log($"{npcName} received trigger: {triggerType} ({impact:F2})");
 
-        if (Random.value < 0.4f)
+        if (UnityEngine.Random.value < 0.4f)
         {
             string triggerMessage = TriggerToAIMessage(triggerType);
             InteractWithPlayer(triggerMessage);
@@ -161,14 +193,14 @@ public class NPCController : MonoBehaviour
     {
         string t = triggerType.ToLower();
 
-        if (t.Contains("night_time")) return "It just became night time.";
-        if (t.Contains("darkness")) return "It is very dark outside now.";
-        if (t.Contains("night_patrol")) return "The night patrol has started.";
-        if (t.Contains("loud_noise")) return "You heard a loud noise nearby.";
-        if (t.Contains("threat")) return "There is a threat nearby.";
-        if (t.Contains("safe")) return "Everything seems safe now.";
+        if (t.Contains("night_time")) return "It just became night.";
+        if (t.Contains("darkness")) return "It is very dark now.";
+        if (t.Contains("night_patrol")) return "The patrol has started.";
+        if (t.Contains("loud_noise")) return "A loud noise happened.";
+        if (t.Contains("threat")) return "There is danger nearby.";
+        if (t.Contains("safe")) return "Things feel safe now.";
         if (t.Contains("rain")) return "It started raining.";
-        if (t.Contains("morning")) return "The morning has arrived.";
+        if (t.Contains("morning")) return "Morning has arrived.";
 
         return $"Something happened: {triggerType}.";
     }

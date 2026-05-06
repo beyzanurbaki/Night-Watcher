@@ -12,23 +12,21 @@ public class OllamaManager : MonoBehaviour
     [SerializeField] private float temperature = 0.1f;
     [SerializeField] private int maxPredict = 12;
 
-    public IEnumerator CreateNPCModel(string npcModelName, string systemPrompt)
+    public IEnumerator CreateNPCModel(string npcModelName, string systemPrompt, Action<bool> onDone = null)
     {
         string safeModelName = SanitizeModelName(npcModelName);
+        string safeSystemPrompt = EscapeJson(systemPrompt);
 
-        OllamaCreateRequest requestData = new OllamaCreateRequest
-        {
-            model = safeModelName,
-            @from = baseModel,
-            system = systemPrompt,
-            stream = false
-        };
-
-        string jsonBody = JsonUtility.ToJson(requestData);
+        string jsonPayload = "{"
+            + "\"model\":\"" + safeModelName + "\","
+            + "\"from\":\"" + baseModel + "\","
+            + "\"system\":\"" + safeSystemPrompt + "\","
+            + "\"stream\":false"
+            + "}";
 
         using (UnityWebRequest request = new UnityWebRequest($"{baseUrl}/create", "POST"))
         {
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
@@ -39,24 +37,31 @@ public class OllamaManager : MonoBehaviour
             if (request.result == UnityWebRequest.Result.Success)
             {
                 Debug.Log($"<color=green>Ollama:</color> {safeModelName} model created.");
+                onDone?.Invoke(true);
             }
             else
             {
                 Debug.LogError($"Model Creation Error ({safeModelName}): {request.downloadHandler.text}");
+                onDone?.Invoke(false);
             }
         }
     }
 
     public void SendMessageToNPC(string npcModelName, string playerMessage, Action<string> onReply = null)
     {
+        SendMessageToNPC(npcModelName, playerMessage, onReply, temperature);
+    }
+
+    public void SendMessageToNPC(string npcModelName, string playerMessage, Action<string> onReply, float customTemp)
+    {
         if (string.IsNullOrWhiteSpace(playerMessage))
             return;
 
         string safeModelName = SanitizeModelName(npcModelName);
-        StartCoroutine(CallOllama(safeModelName, playerMessage, onReply));
+        StartCoroutine(CallOllama(safeModelName, playerMessage, onReply, customTemp));
     }
 
-    private IEnumerator CallOllama(string modelName, string playerMessage, Action<string> onReply)
+    private IEnumerator CallOllama(string modelName, string playerMessage, Action<string> onReply, float temp)
     {
         OllamaChatRequest requestData = new OllamaChatRequest
         {
@@ -72,7 +77,7 @@ public class OllamaManager : MonoBehaviour
             stream = false,
             options = new OllamaOptions
             {
-                temperature = temperature,
+                temperature = temp,
                 num_predict = maxPredict
             }
         };
@@ -124,15 +129,15 @@ public class OllamaManager : MonoBehaviour
 
         return sb.ToString();
     }
-}
 
-[Serializable]
-public class OllamaCreateRequest
-{
-    public string model;
-    public string @from;
-    public string system;
-    public bool stream;
+    private string EscapeJson(string text)
+    {
+        return text
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", "");
+    }
 }
 
 [Serializable]
