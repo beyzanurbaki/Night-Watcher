@@ -4,33 +4,49 @@ using System.Collections;
 
 public class DialogueManager : MonoBehaviour
 {
-    public TextMeshProUGUI dialogueText; // Canvas içindeki yazı objesi
-    public GameObject bubbleBackground; // Arka plan görseli (isteğe bağlı)
+    public TextMeshProUGUI dialogueText;
+    public GameObject bubbleBackground;
+    public float showDuration = 5f;
 
-    void Start()
+    private Coroutine currentRoutine;
+
+    void Awake()
     {
-        // Başlangıçta gizle
-        bubbleBackground.SetActive(false);
+        if (bubbleBackground != null)
+            bubbleBackground.SetActive(false);
+
+        if (dialogueText != null)
+            dialogueText.text = "";
     }
 
     public void ShowMessage(string message)
     {
-        if (string.IsNullOrEmpty(message)) return; // Boş mesaj gelirse hiçbir şey yapma
+        if (string.IsNullOrEmpty(message)) return;
 
-        Debug.Log("UI'da Gösterilecek: " + message);
-        StopAllCoroutines(); // Önceki zamanlayıcıları durdur
-        StartCoroutine(DisplayRoutine(message));
+        Debug.Log("Text to display: " + message);
+
+        if (currentRoutine != null)
+            StopCoroutine(currentRoutine);
+
+        currentRoutine = StartCoroutine(DisplayRoutine(message));
     }
 
-    IEnumerator DisplayRoutine(string message)
+    private IEnumerator DisplayRoutine(string message)
     {
-        bubbleBackground.SetActive(true);
-        dialogueText.text = message;
+        if (bubbleBackground != null)
+            bubbleBackground.SetActive(true);
 
-        // Süreyi 10 saniyeye çıkaralım ki test ederken rahatça görebil
-        yield return new WaitForSeconds(10f);
+        if (dialogueText != null)
+            dialogueText.text = message;
 
-        bubbleBackground.SetActive(false);
-        dialogueText.text = "";
+        yield return new WaitForSecondsRealtime(showDuration);
+
+        if (bubbleBackground != null)
+            bubbleBackground.SetActive(false);
+
+        if (dialogueText != null)
+            dialogueText.text = "";
+
+        currentRoutine = null;
     }
 }

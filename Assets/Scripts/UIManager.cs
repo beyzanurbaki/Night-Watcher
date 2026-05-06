@@ -7,17 +7,17 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
 
-    [Header("UI Referanslari")]
+    [Header("UI References")]
     public GameObject interactionPanel;
 
     [Header("Memory Panel")]
     public GameObject memoryPanel;
 
-    [Header("Etkilesim Hakki")]
+    [Header("Interaction Rights")]
     public int maxInteractions = 2;
     public int remainingInteractions = 2;
 
-    [Header("Uyari")]
+    [Header("Warning")]
     public TextMeshProUGUI warningText;
 
     private GameObject currentNPC;
@@ -36,9 +36,7 @@ public class UIManager : MonoBehaviour
         memoryPanel.SetActive(false);
 
         if (warningText != null)
-        {
             warningText.gameObject.SetActive(false);
-        }
     }
 
     public void ToggleMemoryPanel()
@@ -50,22 +48,22 @@ public class UIManager : MonoBehaviour
     public void ResetInteractions()
     {
         remainingInteractions = maxInteractions;
-        Debug.Log($"Etkilesim hakki sifirlandi: {remainingInteractions}");
+        Debug.Log($"Interaction rights reset: {remainingInteractions}");
     }
 
     public void ShowInteractionMenu(GameObject npc)
     {
         if (remainingInteractions <= 0)
         {
-            Debug.Log("Etkilesim hakkin kalmadi! Yeni gunu bekle.");
-            StartCoroutine(ShowWarning("Etkilesim hakkin kalmadi! Yeni gunu bekle."));
+            Debug.Log("No interactions left! Wait for the next day.");
+            StartCoroutine(ShowWarning("No interactions left! Wait for the next day."));
             return;
         }
 
         currentNPC = npc;
         interactionPanel.SetActive(true);
         Time.timeScale = 0f;
-        Debug.Log($"Menu acildi: {npc.name} (Kalan hak: {remainingInteractions})");
+        Debug.Log($"Menu opened: {npc.name} (Remaining: {remainingInteractions})");
     }
 
     IEnumerator ShowWarning(string message)
@@ -75,7 +73,7 @@ public class UIManager : MonoBehaviour
         warningText.text = message;
         warningText.gameObject.SetActive(true);
 
-        yield return new WaitForSeconds(4f); // 4 saniye
+        yield return new WaitForSecondsRealtime(4f);
 
         warningText.gameObject.SetActive(false);
     }
@@ -85,7 +83,7 @@ public class UIManager : MonoBehaviour
         interactionPanel.SetActive(false);
         Time.timeScale = 1f;
         currentNPC = null;
-        Debug.Log("Menu kapandi");
+        Debug.Log("Menu closed");
     }
 
     public void OnActionButton(string actionType)
@@ -95,14 +93,14 @@ public class UIManager : MonoBehaviour
         NPCController npc = currentNPC.GetComponent<NPCController>();
         if (npc == null)
         {
-            Debug.Log("HATA: NPCController bulunamadi!");
+            Debug.Log("ERROR: NPCController not found!");
             return;
         }
 
         if (actionType != "ignore")
         {
             remainingInteractions--;
-            Debug.Log($"Etkilesim hakki kullanildi. Kalan: {remainingInteractions}");
+            Debug.Log($"Interaction used. Remaining: {remainingInteractions}");
         }
 
         float impact = 0f;
@@ -158,7 +156,7 @@ public class UIManager : MonoBehaviour
 
         npc.AddMemory(actionType, impact, tags);
 
-        Debug.Log($"{npc.npcName} tutumu: {npc.GetDispositionLabel()} ({npc.GetOverallDisposition():F2})");
+        Debug.Log($"{npc.npcName} disposition: {npc.GetDispositionLabel()} ({npc.GetOverallDisposition():F2})");
 
         if (QuestManager.Instance != null)
         {
@@ -184,11 +182,26 @@ public class UIManager : MonoBehaviour
         if (actionType == "shout" || actionType == "attack")
         {
             if (QuestManager.Instance != null)
-            {
                 QuestManager.Instance.OnBadAction();
-            }
         }
 
+        string aiMessage = ActionToAIMessage(actionType);
+        npc.InteractWithPlayer(aiMessage);
+
         CloseInteractionMenu();
+    }
+
+    private string ActionToAIMessage(string actionType)
+    {
+        switch (actionType)
+        {
+            case "greet": return "The player greeted you.";
+            case "gift": return "The player gave you a gift.";
+            case "help": return "The player helped you.";
+            case "ignore": return "The player ignored you.";
+            case "shout": return "The player shouted at you.";
+            case "attack": return "The player attacked you.";
+            default: return "The player is talking to you.";
+        }
     }
 }

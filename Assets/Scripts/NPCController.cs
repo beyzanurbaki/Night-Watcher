@@ -1,53 +1,193 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Linq;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class NPCController : MonoBehaviour
 {
-    [Header("NPC Bilgileri")]
+    [Header("NPC Identity & AI")]
     public string npcName = "NPC";
+    public OllamaManager ollamaManager;
+    public DialogueManager dialogueManager;
+    private string modelId;
 
-    [Header("Kisilik")]
+    [Header("Personality & Memory")]
     public Personality personality = new Personality();
-
-    [Header("Hafiza")]
     public List<NPCMemory> memories = new List<NPCMemory>();
     public int maxMemories = 50;
 
-    [Header("UI")]
-    public SpriteRenderer emotionIcon;
-
-    [Header("Davranis Ayarlari")]
+    [Header("Behavior & Movement")]
     public float moveSpeed = 2f;
     public float detectionRange = 5f;
+    public SpriteRenderer emotionIcon;
 
     private Transform player;
     private Vector2 startPosition;
     private Rigidbody2D rb;
 
-    void Start()
+    private void Awake()
     {
-        GameObject playerObject = GameObject.Find("Player");
-
-        if (playerObject != null)
-        {
-            player = playerObject.transform;
-        }
-
-        startPosition = transform.position;
-        rb = GetComponent<Rigidbody2D>();
+        if (dialogueManager == null)
+            dialogueManager = GetComponentInChildren<DialogueManager>(true);
     }
 
-    void Update()
+    private IEnumerator Start()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        startPosition = transform.position;
+
+        GameObject playerObject = GameObject.Find("Player");
+        if (playerObject != null)
+            player = playerObject.transform;
+
+        if (ollamaManager != null)
+        {
+            modelId = ollamaManager.SanitizeModelName(npcName);
+            string systemPrompt = GenerateSystemPrompt();
+
+            Debug.Log($"<color=cyan>{npcName}</color> brain is being prepared...");
+
+            yield return StartCoroutine(ollamaManager.CreateNPCModel(modelId, systemPrompt));
+
+            Debug.Log($"<color=cyan>{npcName}</color> brain is ready.");
+        }
+    }
+
+    private void Update()
     {
         UpdateEmotionDisplay();
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         UpdateBehavior();
     }
 
+    #region AI Interaction
+    public void InteractWithPlayer(string playerMessage)
+    {
+        if (ollamaManager == null || string.IsNullOrEmpty(modelId))
+        {
+            Debug.LogWarning($"{npcName}: Missing OllamaManager or modelId!");
+            return;
+        }
+
+        string memoryContext = GetMemoryContextForAI();
+
+        string finalPrompt =
+            $"Current mood: {GetDispositionLabel()}\n" +
+            $"Recent memories: {memoryContext}\n" +
+            $"Player message: {playerMessage}\n" +
+            $"Reply rules: Answer only in English. Use only one short sentence. Maximum 5 words. No explanations. No questions. Stay in character.";
+
+        Debug.Log($"<color=yellow>{npcName}</color> is thinking...");
+
+        ollamaManager.SendMessageToNPC(modelId, finalPrompt, (reply) =>
+        {
+            string shortReply = LimitReplyByWords(reply, 5);
+
+            if (dialogueManager != null)
+                dialogueManager.ShowMessage(shortReply);
+
+            Debug.Log($"<color=cyan>{npcName}</color>: {shortReply}");
+        });
+    }
+
+    private string LimitReplyByWords(string reply, int maxWords = 5)
+    {
+        if (string.IsNullOrWhiteSpace(reply))
+            return "";
+
+        string cleaned = reply.Replace("\n", " ").Trim();
+        string[] words = cleaned.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+
+        if (words.Length <= maxWords)
+            return cleaned;
+
+        return string.Join(" ", words, 0, maxWords).Trim();
+    }
+
+    private string GetMemoryContextForAI()
+    {
+        var strongMemories = memories
+            .Where(m => Mathf.Abs(m.GetStrength()) > 0.1f)
+            .OrderByDescending(m => Mathf.Abs(m.GetStrength()))
+            .Take(3)
+            .Select(m => m.eventType);
+
+        return strongMemories.Any() ? string.Join(", ", strongMemories) : "No significant memories.";
+    }
+
+    private string GenerateSystemPrompt()
+    {
+        string cleanName = npcName.Replace("-", " ").Replace("_", " ");
+
+        return $"You are {cleanName}, an NPC in a 2D game. " +
+               $"Big Five personality scores: " +
+               $"Openness={personality.openness:F2}, " +
+               $"Conscientiousness={personality.conscientiousness:F2}, " +
+               $"Extraversion={personality.extraversion:F2}, " +
+               $"Agreeableness={personality.agreeableness:F2}, " +
+               $"Neuroticism={personality.neuroticism:F2}. " +
+               $"Rules: Stay in character. Reply only in English. Use one short sentence. Maximum 5 words. No explanations.";
+    }
+    #endregion
+
+    #region Trigger System
+    public void ActivateTrigger(string triggerType, float impact = 0f, List<string> tags = null)
+    {
+        if (impact == 0f)
+            impact = GetTriggerImpact(triggerType);
+
+        if (tags == null)
+            tags = new List<string> { triggerType };
+
+        AddMemory(triggerType, impact, tags);
+
+        if (memories.Count > 0)
+            StartCoroutine(TemporaryBoostMemory(memories[memories.Count - 1], 1f, 5f));
+
+        Debug.Log($"{npcName} received trigger: {triggerType} ({impact:F2})");
+
+        if (Random.value < 0.4f)
+        {
+            string triggerMessage = TriggerToAIMessage(triggerType);
+            InteractWithPlayer(triggerMessage);
+        }
+    }
+
+    private string TriggerToAIMessage(string triggerType)
+    {
+        string t = triggerType.ToLower();
+
+        if (t.Contains("night_time")) return "It just became night time.";
+        if (t.Contains("darkness")) return "It is very dark outside now.";
+        if (t.Contains("night_patrol")) return "The night patrol has started.";
+        if (t.Contains("loud_noise")) return "You heard a loud noise nearby.";
+        if (t.Contains("threat")) return "There is a threat nearby.";
+        if (t.Contains("safe")) return "Everything seems safe now.";
+        if (t.Contains("rain")) return "It started raining.";
+        if (t.Contains("morning")) return "The morning has arrived.";
+
+        return $"Something happened: {triggerType}.";
+    }
+
+    private float GetTriggerImpact(string triggerType)
+    {
+        string t = triggerType.ToLower();
+
+        if (t.Contains("attack") || t.Contains("threat") || t.Contains("noise") || t.Contains("dark"))
+            return -0.25f;
+
+        if (t.Contains("gift") || t.Contains("help") || t.Contains("social") || t.Contains("safe"))
+            return 0.25f;
+
+        return 0.10f;
+    }
+    #endregion
+
+    #region Movement & Memory
     void UpdateBehavior()
     {
         if (player == null || rb == null) return;
@@ -60,52 +200,43 @@ public class NPCController : MonoBehaviour
 
             switch (disposition)
             {
-                case "Dostca":
+                case "Friendly":
                     MoveTowards(player.position, moveSpeed);
                     break;
-
-                case "Sicak":
+                case "Warm":
                     MoveTowards(player.position, moveSpeed * 0.5f);
                     break;
-
-                case "Notr":
+                case "Neutral":
                     rb.linearVelocity = Vector2.zero;
                     break;
-
-                case "Tedirgin":
+                case "Uneasy":
                     MoveAway(player.position, moveSpeed * 0.5f);
                     break;
-
-                case "Dusmanca":
+                case "Hostile":
                     MoveAway(player.position, moveSpeed);
                     break;
             }
         }
+        else if (Vector2.Distance(transform.position, startPosition) > 0.1f)
+        {
+            MoveTowards(startPosition, moveSpeed * 0.3f);
+        }
         else
         {
-            float distToStart = Vector2.Distance(transform.position, startPosition);
-
-            if (distToStart > 0.1f)
-            {
-                MoveTowards(startPosition, moveSpeed * 0.3f);
-            }
-            else
-            {
-                rb.linearVelocity = Vector2.zero;
-            }
+            rb.linearVelocity = Vector2.zero;
         }
     }
 
     void MoveTowards(Vector2 target, float speed)
     {
-        Vector2 direction = (target - (Vector2)transform.position).normalized;
-        rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
+        Vector2 dir = (target - (Vector2)transform.position).normalized;
+        rb.MovePosition(rb.position + dir * speed * Time.fixedDeltaTime);
     }
 
     void MoveAway(Vector2 target, float speed)
     {
-        Vector2 direction = ((Vector2)transform.position - target).normalized;
-        rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
+        Vector2 dir = ((Vector2)transform.position - target).normalized;
+        rb.MovePosition(rb.position + dir * speed * Time.fixedDeltaTime);
     }
 
     public void AddMemory(string eventType, float impact, List<string> tags = null)
@@ -115,94 +246,50 @@ public class NPCController : MonoBehaviour
 
         memories.Add(newMemory);
 
-        Debug.Log($"{npcName}: Yeni ani eklendi - {eventType} ({impact:F1}) - Decay: {newMemory.decayRate:F4}");
-        Debug.Log($"{npcName}: Toplam ani sayisi: {memories.Count}");
-
         if (memories.Count > maxMemories)
-        {
             memories.RemoveAt(0);
-        }
     }
 
     public float GetOverallDisposition()
     {
-        if (memories.Count == 0) return 0f;
-
-        float total = 0f;
-
-        foreach (var memory in memories)
-        {
-            total += memory.GetStrength();
-        }
-
-        return total;
+        return memories.Count == 0 ? 0f : memories.Sum(m => m.GetStrength());
     }
 
     public string GetDispositionLabel()
     {
-        float disposition = GetOverallDisposition();
+        float disp = GetOverallDisposition();
 
-        if (disposition < -0.5f) return "Dusmanca";
-        if (disposition < -0.2f) return "Tedirgin";
-        if (disposition > 0.5f) return "Dostca";
-        if (disposition > 0.2f) return "Sicak";
-        return "Notr";
+        if (disp < -0.5f) return "Hostile";
+        if (disp < -0.2f) return "Uneasy";
+        if (disp > 0.5f) return "Friendly";
+        if (disp > 0.2f) return "Warm";
+        return "Neutral";
     }
 
     void UpdateEmotionDisplay()
     {
         if (emotionIcon == null) return;
 
-        float disposition = GetOverallDisposition();
+        float disp = GetOverallDisposition();
 
-        if (disposition < -0.5f)
-            emotionIcon.color = Color.red;
-        else if (disposition < -0.2f)
-            emotionIcon.color = new Color(1f, 0.5f, 0f);
-        else if (disposition > 0.5f)
-            emotionIcon.color = Color.green;
-        else if (disposition > 0.2f)
-            emotionIcon.color = Color.cyan;
-        else
-            emotionIcon.color = Color.yellow;
-    }
-
-    public void ActivateTrigger(string triggerType)
-    {
-        bool hasTriggeredMemory = false;
-
-        foreach (var memory in memories)
-        {
-            if (memory.tags == null) continue;
-
-            if (memory.tags.Contains(triggerType) && Mathf.Abs(memory.GetStrength()) > 0.02f)
-            {
-                StartCoroutine(TemporaryBoostMemory(memory, 0.5f, 10f));
-                hasTriggeredMemory = true;
-            }
-        }
-
-        if (hasTriggeredMemory)
-        {
-            Debug.Log($"{npcName}: '{triggerType}' tetikleyicisi gecmis anilari canlandirdi!");
-        }
+        if (disp < -0.5f) emotionIcon.color = Color.red;
+        else if (disp < -0.2f) emotionIcon.color = new Color(1f, 0.5f, 0f);
+        else if (disp > 0.5f) emotionIcon.color = Color.green;
+        else if (disp > 0.2f) emotionIcon.color = Color.cyan;
+        else emotionIcon.color = Color.yellow;
     }
 
     IEnumerator TemporaryBoostMemory(NPCMemory memory, float boostAmount, float duration)
     {
-        float originalImpact = memory.emotionalImpact;
-        float originalTimestamp = memory.timestamp;
-
-        memory.emotionalImpact = originalImpact * 2f;
-        memory.timestamp = Time.time;
+        float original = memory.emotionalImpact;
+        memory.emotionalImpact *= 2f;
 
         UpdateEmotionDisplay();
 
         yield return new WaitForSeconds(duration);
 
-        memory.emotionalImpact = originalImpact;
-        memory.timestamp = originalTimestamp;
-
+        memory.emotionalImpact = original;
         UpdateEmotionDisplay();
     }
+    #endregion
 }
