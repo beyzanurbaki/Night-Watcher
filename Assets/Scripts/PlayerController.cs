@@ -18,6 +18,8 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 0;
         rb = GetComponent<Rigidbody2D>();
     }
 
@@ -36,11 +38,11 @@ public class PlayerController : MonoBehaviour
             Interact();
         }
 
-        // Tab ile hafiza paneli
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            UIManager.Instance.ToggleMemoryPanel();
-        }
+        // Tab ile hafiza paneli (Iptal edildi, artik hep acik)
+        // if (Input.GetKeyDown(KeyCode.Tab))
+        // {
+        //     UIManager.Instance.ToggleMemoryPanel();
+        // }
 
         // F ile fener ac/kapa
         if (Input.GetKeyDown(KeyCode.L))

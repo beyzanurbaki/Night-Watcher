@@ -12,9 +12,14 @@ public class MemoryPanelUI : MonoBehaviour
     public TextMeshProUGUI ahmetInfoText;
     public TextMeshProUGUI ayseInfoText;
     public TextMeshProUGUI mehmetInfoText;
+    public TextMeshProUGUI statsText; // FPS ve CPU değerlerini gösterecek olan Text
+
+    private float deltaTime = 0.0f;
 
     void Update()
     {
+        // FPS hesaplaması için geçen süreyi yumuşatarak alıyoruz
+        deltaTime += (Time.unscaledDeltaTime - deltaTime) * 0.1f;
         UpdatePanel();
     }
 
@@ -61,6 +66,14 @@ public class MemoryPanelUI : MonoBehaviour
                 $"Tutum: {label} ({disposition:F2})\n" +
                 $"Ani sayisi: {memoryCount}\n" +
                 $"En guclu ani: {strongest}";
+        }
+
+        // FPS ve CPU (ms) değerlerini arayüze yazdırıyoruz
+        if (statsText != null)
+        {
+            float msec = deltaTime * 1000.0f;
+            float fps = 1.0f / deltaTime;
+            statsText.text = $"Graphics:    {fps:F1} FPS ({msec:F1}ms)\nCPU: main {msec:F1}ms";
         }
     }
 

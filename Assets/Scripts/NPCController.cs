@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,6 +30,9 @@ public class NPCController : MonoBehaviour
     private Transform player;
     private Vector2 startPosition;
     private Rigidbody2D rb;
+    private Animator anim;
+    private Vector2 moveDirection;
+    private Vector2 lastMoveDirection;
 
     private void Awake()
     {
@@ -40,6 +43,7 @@ public class NPCController : MonoBehaviour
     private IEnumerator Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>();
         startPosition = transform.position;
 
         GameObject playerObject = GameObject.Find("Player");
@@ -70,11 +74,28 @@ public class NPCController : MonoBehaviour
     private void Update()
     {
         UpdateEmotionDisplay();
+        UpdateAnimation();
     }
 
     private void FixedUpdate()
     {
         UpdateBehavior();
+    }
+
+    private void UpdateAnimation()
+    {
+        if (anim != null)
+        {
+            anim.SetFloat("Horizontal", moveDirection.x);
+            anim.SetFloat("Vertical", moveDirection.y);
+            anim.SetFloat("Speed", moveDirection.sqrMagnitude);
+
+            if (moveDirection.sqrMagnitude > 0.01f)
+            {
+                anim.SetFloat("LastHorizontal", moveDirection.x);
+                anim.SetFloat("LastVertical", moveDirection.y);
+            }
+        }
     }
 
     #region AI Interaction
@@ -239,7 +260,7 @@ public class NPCController : MonoBehaviour
                     MoveTowards(player.position, moveSpeed * 0.5f);
                     break;
                 case "Neutral":
-                    rb.linearVelocity = Vector2.zero;
+                    StopMovement();
                     break;
                 case "Uneasy":
                     MoveAway(player.position, moveSpeed * 0.5f);
@@ -255,20 +276,26 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            rb.linearVelocity = Vector2.zero;
+            StopMovement();
         }
+    }
+
+    void StopMovement()
+    {
+        rb.linearVelocity = Vector2.zero;
+        moveDirection = Vector2.zero;
     }
 
     void MoveTowards(Vector2 target, float speed)
     {
-        Vector2 dir = (target - (Vector2)transform.position).normalized;
-        rb.MovePosition(rb.position + dir * speed * Time.fixedDeltaTime);
+        moveDirection = (target - (Vector2)transform.position).normalized;
+        rb.MovePosition(rb.position + moveDirection * speed * Time.fixedDeltaTime);
     }
 
     void MoveAway(Vector2 target, float speed)
     {
-        Vector2 dir = ((Vector2)transform.position - target).normalized;
-        rb.MovePosition(rb.position + dir * speed * Time.fixedDeltaTime);
+        moveDirection = ((Vector2)transform.position - target).normalized;
+        rb.MovePosition(rb.position + moveDirection * speed * Time.fixedDeltaTime);
     }
 
     public void AddMemory(string eventType, float impact, List<string> tags = null)

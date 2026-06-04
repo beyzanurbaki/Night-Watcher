@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
@@ -33,7 +33,7 @@ public class UIManager : MonoBehaviour
     void Start()
     {
         interactionPanel.SetActive(false);
-        memoryPanel.SetActive(false);
+        memoryPanel.SetActive(true); // Hafıza paneli başlangıçta hep açık kalsın
 
         if (warningText != null)
             warningText.gameObject.SetActive(false);

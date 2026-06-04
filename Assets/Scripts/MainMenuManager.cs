@@ -8,6 +8,9 @@ public class MainMenuManager : MonoBehaviour
 
     private void Start()
     {
+        // FPS'i 60'a sabitliyoruz
+        Application.targetFrameRate = 60;
+
         // Başlangıçta ayarlar panelinin kapalı olduğundan emin oluyoruz
         if (settingsPanel != null)
         {
