@@ -48,8 +48,25 @@ public class NPCController : MonoBehaviour
             dialogueManager = GetComponentInChildren<DialogueManager>(true);
     }
 
+    private void LoadPersonalityFromPrefs()
+    {
+        string safeName = npcName.Replace(" ", "_").Replace("-", "_");
+        string prefix = $"NPC_{safeName}_";
+        if (PlayerPrefs.HasKey(prefix + "openness"))
+        {
+            personality.openness = PlayerPrefs.GetFloat(prefix + "openness");
+            personality.conscientiousness = PlayerPrefs.GetFloat(prefix + "conscientiousness");
+            personality.extraversion = PlayerPrefs.GetFloat(prefix + "extraversion");
+            personality.agreeableness = PlayerPrefs.GetFloat(prefix + "agreeableness");
+            personality.neuroticism = PlayerPrefs.GetFloat(prefix + "neuroticism");
+            Debug.Log($"<color=cyan>{npcName}</color> personality loaded from PlayerPrefs: O={personality.openness:F2}, C={personality.conscientiousness:F2}, E={personality.extraversion:F2}, A={personality.agreeableness:F2}, N={personality.neuroticism:F2}");
+        }
+    }
+
     private IEnumerator Start()
     {
+        LoadPersonalityFromPrefs();
+
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         startPosition = transform.position;
