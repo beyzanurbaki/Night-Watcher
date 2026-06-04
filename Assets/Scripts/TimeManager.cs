@@ -24,6 +24,43 @@ public class TimeManager : MonoBehaviour
         Instance = this;
     }
 
+    void Start()
+    {
+        InitializeStreetLights();
+    }
+
+    void InitializeStreetLights()
+    {
+        GameObject decorations = GameObject.Find("Decorations");
+        if (decorations != null)
+        {
+            foreach (Transform child in decorations.transform)
+            {
+                if (child.name.Contains("Street-light"))
+                {
+                    if (child.gameObject.GetComponent<StreetLightController>() == null)
+                    {
+                        child.gameObject.AddComponent<StreetLightController>();
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Fallback search
+            foreach (GameObject go in GameObject.FindObjectsOfType<GameObject>())
+            {
+                if (go.name.Contains("Street-light"))
+                {
+                    if (go.GetComponent<StreetLightController>() == null)
+                    {
+                        go.AddComponent<StreetLightController>();
+                    }
+                }
+            }
+        }
+    }
+
     void Update()
     {
         currentTime += Time.deltaTime;

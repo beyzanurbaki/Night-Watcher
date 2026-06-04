@@ -360,36 +360,30 @@ public class NPCController : MonoBehaviour
 
         string disposition = GetDispositionLabel();
 
+        // Emojilerin orijinal renklerini korumak için rengi beyaza sabitliyoruz (renk filtresi/tonlama uygulanmasın)
+        emotionIcon.color = Color.white;
+
         switch (disposition)
         {
             case "Hostile":
                 if (hostileSprite != null) emotionIcon.sprite = hostileSprite;
-                // Kırmızı kor gibi yavaşça parlama efekti (Intensity between 1.5 and 3.5)
-                float hostileGlow = Mathf.Lerp(1.5f, 3.5f, (Mathf.Sin(Time.time * 2f) + 1f) / 2f);
-                emotionIcon.color = new Color(1f, 0.1f, 0.1f) * hostileGlow;
                 break;
                 
             case "Uneasy":
                 if (uneasySprite != null) emotionIcon.sprite = uneasySprite;
-                emotionIcon.color = new Color(1f, 0.5f, 0f) * 1.5f; // Turuncu, hafif parlak
                 break;
                 
             case "Friendly":
                 if (friendlySprite != null) emotionIcon.sprite = friendlySprite;
-                // Yumuşak yeşil/altın sarısı parlama efekti
-                float friendlyGlow = Mathf.Lerp(1.2f, 2.5f, (Mathf.Sin(Time.time * 1.5f) + 1f) / 2f);
-                emotionIcon.color = new Color(0.6f, 1f, 0.2f) * friendlyGlow; // Soft yeşil/altın
                 break;
                 
             case "Warm":
                 if (warmSprite != null) emotionIcon.sprite = warmSprite;
-                emotionIcon.color = new Color(0f, 1f, 1f) * 1.5f; // Camgöbeği (Cyan)
                 break;
                 
             case "Neutral":
             default:
                 if (neutralSprite != null) emotionIcon.sprite = neutralSprite;
-                emotionIcon.color = new Color(1f, 1f, 0f) * 1f; // Normal sarı
                 break;
         }
     }
