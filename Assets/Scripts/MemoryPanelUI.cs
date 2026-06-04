@@ -14,7 +14,18 @@ public class MemoryPanelUI : MonoBehaviour
     public TextMeshProUGUI mehmetInfoText;
     public TextMeshProUGUI statsText; // FPS ve CPU değerlerini gösterecek olan Text
 
+    [Header("Ollama Referans")]
+    public OllamaManager ollamaManager;
+
     private float deltaTime = 0.0f;
+
+    void Start()
+    {
+        if (ollamaManager == null)
+        {
+            ollamaManager = FindObjectOfType<OllamaManager>();
+        }
+    }
 
     void Update()
     {
@@ -34,7 +45,7 @@ public class MemoryPanelUI : MonoBehaviour
             string strongest = GetStrongestMemory(ahmetNPC);
 
             ahmetInfoText.text =
-                $"Ahmet Abi\n" +
+                $"Durum: {GetAIStatus(ahmetNPC)}\n" +
                 $"Tutum: {label} ({disposition:F2})\n" +
                 $"Ani sayisi: {memoryCount}\n" +
                 $"En guclu ani: {strongest}";
@@ -48,7 +59,7 @@ public class MemoryPanelUI : MonoBehaviour
             string strongest = GetStrongestMemory(ayseNPC);
 
             ayseInfoText.text =
-                $"Ayse Teyze\n" +
+                $"Durum: {GetAIStatus(ayseNPC)}\n" +
                 $"Tutum: {label} ({disposition:F2})\n" +
                 $"Ani sayisi: {memoryCount}\n" +
                 $"En guclu ani: {strongest}";
@@ -62,7 +73,7 @@ public class MemoryPanelUI : MonoBehaviour
             string strongest = GetStrongestMemory(mehmetNPC);
 
             mehmetInfoText.text =
-                $"Mehmet Abi\n" +
+                $"Durum: {GetAIStatus(mehmetNPC)}\n" +
                 $"Tutum: {label} ({disposition:F2})\n" +
                 $"Ani sayisi: {memoryCount}\n" +
                 $"En guclu ani: {strongest}";
@@ -75,6 +86,17 @@ public class MemoryPanelUI : MonoBehaviour
             float fps = 1.0f / deltaTime;
             statsText.text = $"Graphics:    {fps:F1} FPS ({msec:F1}ms)\nCPU: main {msec:F1}ms";
         }
+    }
+
+    string GetAIStatus(NPCController npc)
+    {
+        if (npc.isThinking)
+        {
+            int dotsCount = (int)(Time.time * 3f) % 4; 
+            string dots = new string('.', dotsCount);
+            return $"Düşünüyor{dots}";
+        }
+        return "Hazır";
     }
 
     string GetStrongestMemory(NPCController npc)

@@ -13,6 +13,7 @@ public class NPCController : MonoBehaviour
     public DialogueManager dialogueManager;
     private string modelId;
     private bool modelReady = false;
+    public bool isThinking { get; private set; } = false;
 
     [Header("AI Settings")]
     public float aiTemperature = 0.3f;
@@ -25,7 +26,14 @@ public class NPCController : MonoBehaviour
     [Header("Behavior & Movement")]
     public float moveSpeed = 2f;
     public float detectionRange = 5f;
+    
+    [Header("Emotion UI")]
     public SpriteRenderer emotionIcon;
+    public Sprite hostileSprite;
+    public Sprite uneasySprite;
+    public Sprite neutralSprite;
+    public Sprite warmSprite;
+    public Sprite friendlySprite;
 
     private Transform player;
     private Vector2 startPosition;
@@ -57,10 +65,12 @@ public class NPCController : MonoBehaviour
 
             Debug.Log($"<color=cyan>{npcName}</color> brain is being prepared...");
 
+            isThinking = true;
             bool createSuccess = false;
             yield return StartCoroutine(
                 ollamaManager.CreateNPCModel(modelId, systemPrompt, success => createSuccess = success)
             );
+            isThinking = false;
 
             modelReady = createSuccess;
 
@@ -118,8 +128,10 @@ public class NPCController : MonoBehaviour
 
         Debug.Log($"<color=yellow>{npcName}</color> is thinking...");
 
+        isThinking = true;
         ollamaManager.SendMessageToNPC(modelId, finalPrompt, (reply) =>
         {
+            isThinking = false;
             string shortReply = LimitReplyByWords(reply, 5);
 
             if (dialogueManager != null)
@@ -329,13 +341,40 @@ public class NPCController : MonoBehaviour
     {
         if (emotionIcon == null) return;
 
-        float disp = GetOverallDisposition();
+        string disposition = GetDispositionLabel();
 
-        if (disp < -0.5f) emotionIcon.color = Color.red;
-        else if (disp < -0.2f) emotionIcon.color = new Color(1f, 0.5f, 0f);
-        else if (disp > 0.5f) emotionIcon.color = Color.green;
-        else if (disp > 0.2f) emotionIcon.color = Color.cyan;
-        else emotionIcon.color = Color.yellow;
+        switch (disposition)
+        {
+            case "Hostile":
+                if (hostileSprite != null) emotionIcon.sprite = hostileSprite;
+                // Kırmızı kor gibi yavaşça parlama efekti (Intensity between 1.5 and 3.5)
+                float hostileGlow = Mathf.Lerp(1.5f, 3.5f, (Mathf.Sin(Time.time * 2f) + 1f) / 2f);
+                emotionIcon.color = new Color(1f, 0.1f, 0.1f) * hostileGlow;
+                break;
+                
+            case "Uneasy":
+                if (uneasySprite != null) emotionIcon.sprite = uneasySprite;
+                emotionIcon.color = new Color(1f, 0.5f, 0f) * 1.5f; // Turuncu, hafif parlak
+                break;
+                
+            case "Friendly":
+                if (friendlySprite != null) emotionIcon.sprite = friendlySprite;
+                // Yumuşak yeşil/altın sarısı parlama efekti
+                float friendlyGlow = Mathf.Lerp(1.2f, 2.5f, (Mathf.Sin(Time.time * 1.5f) + 1f) / 2f);
+                emotionIcon.color = new Color(0.6f, 1f, 0.2f) * friendlyGlow; // Soft yeşil/altın
+                break;
+                
+            case "Warm":
+                if (warmSprite != null) emotionIcon.sprite = warmSprite;
+                emotionIcon.color = new Color(0f, 1f, 1f) * 1.5f; // Camgöbeği (Cyan)
+                break;
+                
+            case "Neutral":
+            default:
+                if (neutralSprite != null) emotionIcon.sprite = neutralSprite;
+                emotionIcon.color = new Color(1f, 1f, 0f) * 1f; // Normal sarı
+                break;
+        }
     }
 
     IEnumerator TemporaryBoostMemory(NPCMemory memory, float boostAmount, float duration)

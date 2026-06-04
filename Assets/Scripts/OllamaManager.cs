@@ -12,6 +12,9 @@ public class OllamaManager : MonoBehaviour
     [SerializeField] private float temperature = 0.1f;
     [SerializeField] private int maxPredict = 12;
 
+    private int activeRequests = 0;
+    public bool IsThinking => activeRequests > 0;
+
     public IEnumerator CreateNPCModel(string npcModelName, string systemPrompt, Action<bool> onDone = null)
     {
         string safeModelName = SanitizeModelName(npcModelName);
@@ -24,6 +27,7 @@ public class OllamaManager : MonoBehaviour
             + "\"stream\":false"
             + "}";
 
+        activeRequests++;
         using (UnityWebRequest request = new UnityWebRequest($"{baseUrl}/create", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
@@ -45,6 +49,7 @@ public class OllamaManager : MonoBehaviour
                 onDone?.Invoke(false);
             }
         }
+        activeRequests--;
     }
 
     public void SendMessageToNPC(string npcModelName, string playerMessage, Action<string> onReply = null)
@@ -84,6 +89,7 @@ public class OllamaManager : MonoBehaviour
 
         string jsonBody = JsonUtility.ToJson(requestData);
 
+        activeRequests++;
         using (UnityWebRequest request = new UnityWebRequest($"{baseUrl}/chat", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
@@ -112,6 +118,7 @@ public class OllamaManager : MonoBehaviour
                 Debug.LogError($"Ollama Chat Error ({modelName}): {request.downloadHandler.text}");
             }
         }
+        activeRequests--;
     }
 
     public string SanitizeModelName(string rawName)
