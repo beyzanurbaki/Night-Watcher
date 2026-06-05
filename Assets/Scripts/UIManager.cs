@@ -20,6 +20,14 @@ public class UIManager : MonoBehaviour
     [Header("Warning")]
     public TextMeshProUGUI warningText;
 
+    [Header("Event Notification")]
+    public TextMeshProUGUI eventNotificationText;
+    public GameObject eventNotificationPanel;
+    public float eventNotificationDuration = 3f;
+
+    private Coroutine eventNotificationCoroutine;
+    private Queue<string> eventNotificationQueue = new Queue<string>();
+    private bool isDisplayingNotification = false;
     private GameObject currentNPC;
 
     void Awake()
@@ -37,6 +45,15 @@ public class UIManager : MonoBehaviour
 
         if (warningText != null)
             warningText.gameObject.SetActive(false);
+
+        if (eventNotificationText != null)
+        {
+            eventNotificationText.text = "";
+            eventNotificationText.gameObject.SetActive(false);
+        }
+
+        if (eventNotificationPanel != null)
+            eventNotificationPanel.SetActive(false);
     }
 
     public void ToggleMemoryPanel()
@@ -203,5 +220,80 @@ public class UIManager : MonoBehaviour
             case "attack": return "The player attacked you.";
             default: return "The player is talking to you.";
         }
+    }
+
+    public void ShowEventNotification(string message)
+    {
+        if (eventNotificationText == null)
+        {
+            Debug.LogWarning("EventNotificationText reference is missing in UIManager!");
+            return;
+        }
+
+        eventNotificationQueue.Enqueue(message);
+
+        if (!isDisplayingNotification)
+        {
+            eventNotificationCoroutine = StartCoroutine(ProcessNotificationQueue());
+        }
+    }
+
+    private IEnumerator ProcessNotificationQueue()
+    {
+        isDisplayingNotification = true;
+
+        while (eventNotificationQueue.Count > 0)
+        {
+            string nextMessage = eventNotificationQueue.Dequeue();
+            yield return StartCoroutine(FadeNotificationRoutine(nextMessage));
+            yield return new WaitForSecondsRealtime(0.2f); // Short pause between notifications
+        }
+
+        isDisplayingNotification = false;
+        eventNotificationCoroutine = null;
+    }
+
+    private IEnumerator FadeNotificationRoutine(string message)
+    {
+        eventNotificationText.gameObject.SetActive(true);
+        eventNotificationText.text = message;
+        
+        if (eventNotificationPanel != null)
+            eventNotificationPanel.SetActive(true);
+
+        Color originalColor = eventNotificationText.color;
+        
+        // Fade In (0.5 seconds)
+        float elapsed = 0f;
+        float fadeDuration = 0.5f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float alpha = Mathf.Clamp01(elapsed / fadeDuration);
+            eventNotificationText.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
+            yield return null;
+        }
+        eventNotificationText.color = new Color(originalColor.r, originalColor.g, originalColor.b, 1f);
+
+        // Stay on screen
+        yield return new WaitForSecondsRealtime(eventNotificationDuration);
+
+        // Fade Out (0.5 seconds)
+        elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float alpha = Mathf.Clamp01(1f - (elapsed / fadeDuration));
+            eventNotificationText.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
+            yield return null;
+        }
+        eventNotificationText.color = new Color(originalColor.r, originalColor.g, originalColor.b, 0f);
+
+        if (eventNotificationPanel != null)
+            eventNotificationPanel.SetActive(false);
+
+        eventNotificationText.text = "";
+        eventNotificationText.gameObject.SetActive(false);
+        eventNotificationText.color = originalColor;
     }
 }

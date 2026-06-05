@@ -67,6 +67,7 @@ public class EventManager : MonoBehaviour
             case 3:
                 // Sessiz gece, olay yok
                 Debug.Log("Sakin bir gece...");
+                TriggerManager.Instance.HandleTrigger("quiet_night");
                 break;
         }
     }
